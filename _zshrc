@@ -1,0 +1,41 @@
+source ~/.antigen/antigen.zsh
+
+# Load the oh-my-zsh's library.
+antigen use oh-my-zsh
+
+# Bundles from the default repo (robbyrussell's oh-my-zsh).
+antigen bundle profiles
+antigen bundle git
+#antigen bundle colorize
+#antigen bundle compleat
+#antigen bundle debian
+#antigen bundle history-substring-search
+antigen bundle screen
+#antigen bundle colored-man
+
+# Syntax highlighting bundle.
+antigen bundle zsh-users/zsh-syntax-highlighting
+
+# Load the theme.
+antigen theme ~/.dotfiles/zsh/themes agnoster --no-local-clone
+
+# Tell antigen that you're done.
+antigen apply
+
+# Aliases
+#alias ls="ls -lh --color=auto"
+
+# Color terminal that works with GNU Screen
+export TERM=xterm-256color
+
+# Disable screen sleeping in Ubuntu
+#xset -dpms >/dev/null 2>&1
+#xset s off >/dev/null 2>&1
+
+# Virtualenv
+#export WORKON_HOME=~/virtualenvs
+#source /usr/share/virtualenvwrapper/virtualenvwrapper.sh
+#export PIP_VIRTUALENV_BASE=~/virtualenvs
+
+# AWS Completion
+source /usr/local/bin/aws_zsh_completer.sh
