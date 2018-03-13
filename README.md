@@ -17,4 +17,4 @@ Installation
 ------------
 To install just copy this to your terminal:
 
-  curl -L https://raw.githubusercontent.com/dklight/dotfiles/master/install.sh | /bin/bash
+  curl -L https://raw.githubusercontent.com/agpinto/dotfiles/master/install.sh | /bin/bash
