@@ -1,0 +1,2064 @@
+Troubleshooting
+ps -ef | grep
+top (shift + f)
+netstat -ptnla
+netstat -ptnlu
+ls -l /proc/PID/cwd -> directory of PID
+ls -l /proc/PID/exe -> who is PID
+fuser 80/tcp -> check who opened port 80
+lsof -i :portnumber
+
+http://www.cyberciti.biz/faq/what-process-has-open-linux-port/
+
+more diskstats
+Field 1   -- # of reads issued
+Field 2   -- # of reads merged
+Field 3   -- # of sectors read
+Field 4   -- # of milliseconds spent reading
+Field 5   -- # of writes completed
+Field 6   -- # of writes merged
+Field 7   -- # of sectors written
+Field 8   -- # of milliseconds spent writing
+Field 9   -- # of I/Os currently in progress
+Field 10  -- # of milliseconds spent doing I/Os
+Field 11  -- weighted # of milliseconds spent doing I/Os
+
+awk  -> text editor & parse
+
+
+System Architecture - Linux
+---------------------------
+Everything is consider as a file, consistent. 
+pseudo-filesystems:
+proc & sys
+hot plug		-> udev manager will detect using dbus to access the device folder 
+
+Disks
+-----
+inode: Unique identifier on a partition that points data in a block. Lists of blocks and how to get to a file; don't store path or filename; wasted space in tiny files
+io blocks could be bigger or smaller for handling file size and don't run out of qoutas 
+
+df -h				-> disk space usage
+df -ah				-> all filesystem
+ls -i				-> inode for a path
+df -i				-> disk inodes usage 
+stat				-> inode, block, device, size info
+du -h [path]			-> disk usage
+  -sh [path]			-> summary, used for directories
+  -ah				-> all files but can't summarize it
+debugfs				-> Info about a partition even though its not mounted
+  stats				-> more info
+fsck [/dev/...]			-> Clean or dirty
+  -f				-> Force checks; not on mounted
+  -N				-> dry run
+  -V				-> verbose
+  -A				-> check all file systems in /etc/fstab
+
+Creating partitions
+-------------------
+/dev				-> standard device location
+fdisk				-> supports 4 primary partitions, up to 4 TBytes
+fdisk -l			-> list disk
+fdisk [disk]			->
+  p				-> print partition table
+  n				-> add a new partition
+    e				-> extended
+    p				-> primary
+      +10G			-> 10 Gb
+  w				-> write partition table
+
+gdisk				-> partitons from 1 to 128; from MB to PB
+  w				-> write partition table
+
+parted				->
+
+
+File system
+-----------
+ext			-> no longer supported
+8193 block		-> recovery for ext fs
+
+ext2			-> Legacy, 2 terabytes
+ext3			-> could be downgrade to ext2; journal for file transactions
+reiserfs		-> similar to ext3 but different internal structure; 16 terabytes
+ext4			-> 2008; 1 hexabytes; default modern distribution
+xfs			-> extended filesystem for many small files (CentOS)
+
+make a filesystem
+mkfs -t ext4 [/dev/...]		-> create a filesystem type for a partition
+  -t ext4 -0 [option]		-> change config
+  -b				-> block size
+  -m X				-> X% is reserved for the root user
+  -L [disk Label]		->
+mke2fs	-t ext4 [/dev/...]	-> uses a config file, /etc/mke2fs.conf
+mkswap				-> for swap
+mkraid
+mknode
+mkisofs
+mkudf
+tune2fs -c 0 [/dev/...]		->
+  -e continue			-> mount it despite of issues
+  -e panic			-> won't be remounted
+  -e remount-ro			-> read only mode
+  -g [group]			-> allow to access reserved root space
+xfsprogs
+xfs_repair
+xfs_metadump
+
+
+Mounting FS
+-----------
+Media directory /media
+Filesystem directory for not core FS/mnt
+Kernell updates /etc/mtab but can be hide from /proc/mounts
+mount				-> show mounted filesystems
+  -a				-> mount all FS
+  -f				-> dry-run
+mount -t ext4 [/dev/...] [path]	->
+/etc/fstab			-> make it persistent using UUID; add record UUID=... [path] [FS type] defaults [dump 0; not to a file] [0 not fsck on startup]
+blkid				-> ll /dev/disk; show disks by UUID or other tipes
+umount	[path]			-> unmount
+
+
+Quotas
+------
+/etc/fstab			-> make it persistent using UUID; add record UUID=... [path] [FS type] defaults,usrquota,grpquota 1 2
+quotacheck -avugc		-> -a all config partition, -v verbose, -ug for user and groups, -c create the quota files
+edquota -u [user]		-> edit soft and hard limits
+quotaon -p [mount path]		-> checks quota is on
+quotaon -avug			-> turn it on
+repquota -a			-> list all quotas for users
+edquota -t			-> edit grace period for soft limits
+
+
+Manage tools for configure drivers and devices from pseudo-filenames
+--------------------------------------------------------------------
+lsmod				-> list kernel modules and dependecys
+lscpu				-> show CPU model and data
+lsblk				-> shows block mounted and size 
+lsblk -f			-> shows filesystem type
+lsblk -t			-> shows further information in tree mode
+lspci				-> shows PCI devices
+lspci -v			-> shows further information (verbose)
+lspci -x			-> IRQ and address information
+lspci -i			-> use a file instead of the /usr/share/hwdata/pci.ids
+lspci -m			-> information delimited with "
+lspci -vmm			-> nice output format
+lspci -tv			-> tree structure and further information
+lsscsi -sg			-> size and name
+lsscsi -l or -vv		-> verbose or long
+lsusb				-> shows usb devices connected
+lsraid				-> shows raid, comes with raid devices
+lsdev				->
+
+modprobe			-> add or remove modules from the kernel
+  -r				-> remove
+  -v				-> verbose
+  -n				-> dry run
+insmod				-> insert module
+
+/usr/share/hwdata/pci.ids	-> PCI IDs
+
+Booting the system
+------------------
+init					-> 1st application after the boot loader starts the boot process. It controls startup, and becomes parent of 
+telinit 				-> change system runlevel
+everything. PID 1
+runlevel				-> shows previous and current runlevel
+init 5					-> changes runlevel to 5
+systemctl list-units --type=target	-> 
+systemctl enable [service]		-> Will enable at startup the service
+systemctl start [service]		-> starts the service
+systemctl status			->
+systemctl isolate graphical.target	-> change to graphical target
+
+chkconfig: is a command-line tool that allows you to specify in which runlevel to start a selected service, as well as to list all available services along with their current setting. When you execute chkconfig command only with the service name, it returns true if the service is configured for startup. Whenever you add or remove a service from chkconfig control, it does the following under the /etc/rc.d sub-directories.
+
+chkconfig				-> list all services in init.d
+  --add [service]			-> add a service to startup
+  --del [service]			-> delete a service from startup
+chkconfig --level X [service] on	-> turn on a service for a specific runlevel
+
+
+dmesg					-> holds information about the boot process
+nfs		-> network filesystem
+
+sysvinit				-> package with a group of processes for basic functions
+sysvinit runlevels:
+0 halt (shutdown)
+1 single user
+2 multi user without network
+3 full multi user (with network)
+4 unused
+5 x11 Graphical Desktop Environment
+6 reboot
+
+Boot Process:
+- BIOS load (EFI)
+- BIOS scans and hands off to primary boot sector
+- Master Boot Record, first 512 bytes
+- Boot Loader (LILO/GRUB/GRUB2)
+- User Input to select a boot type
+- Linux kernel is read and executed
+- Device initialization, module loading and inital RAM disk (initrd)
+- Root filesystem mount
+- init program loads (/sbin/init)
+- inittab is read with the appropiates runlevel scritps (/etc/inittab)
+- Modules indicated 
+- Root filesystem is checked
+- Remaining local filesystem are mounted
+- Network devices are started
+- Remote filesystems are mounted
+- Init rescans inittab file and sets the system to the indicated runlevel
+- Run leve are executed in numeric order
+- TTY sessions are loaded
+- System login prompt is displayed
+
+
+systemd				-> default initialization system for bootstrapping and service management. Allows parallel operations
+0 poweroff.target
+1 rescue.target		-> single user
+2 multi-user.target	-> full network
+3 "
+4 "
+5 graphical.target
+6 reboot.target
+
+Boot Process:
+- BIOS load (EFI)
+- BIOS scans and hands off to primary boot sector
+- Master Boot Record, first 512 bytes
+- Boot Loader (LILO/GRUB/GRUB2)
+- User Input to select a boot type
+- Linux kernel is read and executed
+- Device initialization, module loading and inital RAM disk (initrd)
+- Root filesystem is mounted
+- Systemd runs
+- Default run target is executed
+- Modules executed as per runtarget
+- Root filesystem checked and 
+- Remaining local filesystems are mounted
+- Network devices are started
+- Remote filesystems are mounted
+- Systemd sets the runlevel as indicated in the default target
+- System login prompt is displayed
+
+
+Design Hard Disk Layout
+-----------------------
+Logical Volume Manager
+PV		-> Physical Volumes, /dev/sdb1
+VG		-> Volume Group; creates a pool of available storage of PV
+LV		-> Logical Volume; created from VG could be increased or decreased
+Snapshots	-> Point in time in real-time without affecting the filesystem
+Swap		-> dd utility
+
+Partitions (except for /etc):
+- /		-> Root
+- /boot		-> boot loader, init, dram; at least 2 GB
+- swap		-> Memory + 50%
+- /home		-> user directories
+- /opt		-> applications
+- /var		-> database files
+
+
+Boot Managers
+-------------
+GRUB Legacy				-> Multi boot systems
+grup help				-> command prompt
+grub-install [drive]			-> install grub
+/boot/grub/menu.lst			-> Add other kernell versions to system boot
+
+GRUB2
+grub2-install [drive]			-> install grub2
+grub2-install --boot-directory=[path]	-> redirect grub2 to another boot directory
+
+grub-mkconfig > /boot/grub/grub.cfg	-> recreate the grub configuration file
+grub-install /device			-> reinstall grub bootloader
+
+
+Libraries
+---------
+Shared objects		-> .so extension
+directories:
+/lib/
+/usr/lib/
+/usr/lib64/
+/usr/local/lib/
+/usr/share/so/
+/usr/lib/fsystem	-> system's primary unit configuration files
+
+ldd [app path]		-> use which for path. Shows libraries linked
+ld.so.conf		-> directories where it checks for so files
+ldconfig		-> updates ld.so.cache file
+$LD_LIBRARY_PATH	-> enviromental variable with paths
+
+
+
+Option:
+ls -lh		-> human readable
+-a		-> all
+-c		-> grand total
+-t		-> order by date
+-p		-> / at the end of the file name indicating it's a directory
+-R		-> Recursively
+&		-> executes in background
+
+pwd				-> last path of directory
+w				-> who's in
+id				-> my user
+id -G				-> other groups
+id -g				-> my user group
+id -Gn				-> show name group
+which [app]			-> path of binary
+whereis [app]			-> path of files
+  -m				-> manuals
+  -s				-> source files
+whatis [app]			-> 
+type				-> what type of file is
+  -a				-> shows beside its aliases
+whoami
+who -q				-> users connected
+who -r				-> current runlevel for our user
+who -m				-> user and its hostname
+who -b				-> last time system boot
+last [user]			-> show last activity and IP address
+locate [app]			-> easy look up tool
+locate -i			-> ignore up or lower cases
+updatedb			-> update locate DB
+/etc/updatedb.conf		-> PRUNENAMES = ignore; PRUNEPATHS = ignore paths;
+
+find [path] -name "[word]"
+kernel ring buffer	-> dmesg (demon) or klog
+demons			-> d[name]
+wall			-> broadcast to all users
+
+Directories FHS (file system hierarchy standard)
+------------------------------------------------
+/			-> root
+/bin/ & /sbin/		-> Command binaries for all users available in single user mode
+/boot/			-> boot loader files (kernel, initrd..)
+/dev/			-> hardware & block devices
+  /dev/null/		-> null file
+/home/			-> users directories
+/etc/			-> Host-specific configuration files and, services and demons; no binaries
+  /etc/fstab		-> file read on boot. Filesystem tab
+  /etc/opt		-> config files for packages stored in /opt
+  /etc/X11		-> X windows config files
+  /etc/xml		-> config files for soft that process xml
+  /etc/ftpusers		-> ftp 
+  /etc/passwd		-> user accounts information; user:pass:userID:groupID:name::directory:shells; 644 permissions
+  /etc/group		-> system's group
+  /etc/shadow		-> password store; password encrypted:last time password changed:max days required before changing passwd:warning for 				   expiration: grace period:experitation date:unused
+  /etc/login.defs	-> defaults values for user management; useradd
+  /etc/securetty	-> terminals that root user is able to login
+  /etc/nsswitch		-> how login works for users
+  /etc/init.d		-> startup scripts and services
+  /etc/resolv.conf	-> DNS server information is stored -> nameserver
+  /etc/default/useradd	-> default config file for useradd
+  /etc/skel		-> skelefolder; inside folders are copied for new users created
+  /etc/profile		-> Source script that affects system wide, environment variables, looks (.bash_profile has precedence)
+  /etc/bashrc		-> functions, aliases
+  /etc/rc.d/rc.local	-> Last script executed after all other init scripts
+/lib/ & /lib64/		-> code libries used by binaries in /bin and /usr/bin
+/usr/			-> Secondary hierarchy for read-only user data; application files
+  /usr/bin/		-> Non essentials executables; shells scripts
+  /usr/include/		-> Standard include files
+  /usr/lib		-> Libraries for the binaries in /usr/bin
+  /usr/local		-> Terciary hierarchy for local data for the host
+  /usr/share		-> Architecture independent shared data
+  /usr/src		-> Source code
+/sbin/init		-> Essential system binaries
+/media/	& /mnt/		-> mount external devices; mount points for removal media (CD, DVD)
+/proc/			-> procfs sudo file system. Proc file system contains the devices and processes as well as kernel information as files
+  /proc/mounts		-> info about local mounts
+  /proc/interrupts	-> Information about how our hardware is communicating with the CPU. Associates a number to
+  /proc/ioports		-> I/O port associated to PCI,SATA, IDE devices
+  /proc/dma		-> Device can use to access memory directly instead of going through CPU. DMA addresses are used as an alternative to communicating with I/O ports.
+  /proc/usb		-> USB
+  /proc/pci		-> PCI
+  /proc/PID/environ	-> environment variables for that PID
+/root/			-> root user home directory
+/tmp/			-> all users have permissions
+/srv/			-> Site-specific data server by the local system
+/sys/			-> Info about the devices and its hardware system
+  /sys/block		-> RAM & devices
+
+/var/			-> variable data and log files expected to changes
+  /var/log/secure	-> root
+  /var/cache		-> app cache data used as a result of time of I/O consuming. Can be deleted
+  /var/lib		-> state information
+  /var/lock		-> lock files that keep track of resources in use
+  /var/log		-> log files
+  /var/log/cron		->
+  /var/log/messages	-> typically contain everything except the mail log on a syslog system
+  /var/log/maillog	->
+  /var/mail		-> mailbox files
+  /var/run		-> old run time variable data
+  /var/tmp/		-> Temp files that do not get deleted on reboot
+  /var/spool		-> spool for tasks waiting to be processed; print or mail queues
+/run			-> run-time variable data, info about the running system since last boot
+
+
+
+
+man COMMAND
+-----------
+man [section] [command]		-> help
+apropos [word]			-> all documentation that has that word
+man -k  [word]			-> apropos
+/[search]			-> search foward
+?[search]			-> search backwards
+n or /				-> repeats search
+
+
+info COMMAND
+------------
+N		-> next node or level
+P		-> moves back node
+U		-> moves back to top node
+
+
+README
+------
+/usr/share/doc/
+/usr/doc/packagename
+rpm -ql [app] | grep doc
+
+
+
+
+
+stack directories (not pile) (LIFO)
+----------------------------------
+dirs				-> list
+pushd				-> add from stack
+popd				-> remove from stack
+
+setxkbmap -query		-> teclado
+setxkbmap -layout latam		-> cambia teclado
+
+
+environment variables
+---------------------
+set | more			-> show variables used by the shell, colors, ...
+  key map style
+  hash all			-> enables hash table of commands and locations
+  history			->
+  monitor			-> run bg 
+  -o noclobber -> enable variable (disable +o) | Prevents accidental overwrites of existing files
+  notify
+
+set -x				-> commands and parameters will be printed as they're executed
+
+env | more			-> show environment variables
+shopt				-> see env and setting to the shell; can turn on and off by using set
+$SHELL	
+$PATH				-> executables are searched in those directories. Separated by :
+$HISTFILE			-> history file path; .prhistory
+$HISTSIZE			-> history file size (HISTFILESIZE)
+$HISTCONTROL			-> ignoredups (ignore duplicates); ignorespace (ignores commands that start with a space)
+$HOME
+$DISPLAY
+$EUID
+$HOST
+$USER
+$SHELLOPTS			-> shell options on
+
+The export command can be used to set a variable and make it available to other shells in the environment.
+
+
+PATH=$PATH:/home/agustin.pinto/		-> modifying an env variable; this adds my home directory to the $PATH var
+
+
+Shells
+------
+Service accounts uses bin/false, sbin/nologin or /etc/nologin as shells
+Usually they're linked: .bash_profile -> .bashrc -> /etc/bashrc
+
+system wide configuration
+/etc/profile		-> Sets shell environment for all users. source script for .bashrc and that file sources for /etc/bashrc
+/etc/bashrc		-> System wide functions and aliases
+
+Precedence
+login
+.bash_profile instead of .profile .bash_login; includes ~/.bashrc
+.bashrc
+/etc/bashrc
+bash_logout
+
+su root			-> without dash at the end, I won't import root environment variables; bash_profile didn't run for that session
+output			-> 0 is susccess
+
+
+
+
+
+SCRIPTS
+-------
+$?		-> exit code / status, 0 if successfull
+$1		-> first arguments for scripts
+"$1"		-> referencing parameters
+$#		-> number of variables passed in
+#!		-> shebang; identify a env type
+&&		-> AND
+||		-> OR
+exit 4		-> Sets exit code to 4
+$( command )	-> using subshells
+read VAR	-> input to variable VAR
+$(( VAR + 1 ))		-> for arithmetics expressions
+
+CONDITIONALS:
+------------- 
+if [[ "$1" = "yes" ]]; then
+else
+fi
+
+options:
+-d	-> directory exist
+-e	-> files exist
+-f	-> regular file exist; check it's a file
+-G	-> file exist and owned by a group
+-h	-> symbolic link
+-O	-> file exist and ownded by a specified UID
+-r	-> file exist and has read permission
+-w	-> file exist and has write permission
+-x 	-> file exist and has execute permission
+-z	-> variable empty
+
+COMPARATORS:
+------------
+-eq	-> equal
+-ne	-> not equal
+-gt	-> greater than
+-lt	-> less than
+-ge	-> greater or equal than
+-te	-> less or equal than
+
+
+BOOLEAN OPERATORS:
+------------------
+&&	-> AND
+||	-> OR
+
+
+LOOPS:
+------
+for VAR in SOMETHING; do
+done
+
+while VAR != True; do
+done
+
+until VAR = True; do
+done
+
+For seq:
+1 value; increments by one and starts at one until the value
+2 values; increments by one and starts at first value until second value
+3 values; increments by second value and starts at first value until third value
+
+
+TESTING:
+--------
+test
+
+
+
+Globbing wildcards
+------------------
+Def: the process of expanding a specific filename on a storage device
+*			-> all characters
+?			-> 1 single character
+[A-Z]			-> specify characters and their sensitivity
+""			-> subtitutes the value of variable commands
+''			-> use the literal meaning
+\			-> escape character
+[command] \		-> continue command options on next line
+echo " XXX \		-> continue command options on next line
+;			-> end of command
+
+
+Regular Experssions - Regex
+---------------------------
+^			-> set beggining of an expresssion
+$			-> set final of an expression
+.			-> any single character
+[nnn]			-> 
+[a-z]			-> 
+(x|y)			-> x or y
+[^r]			-> not r
+
+
+
+Tar
+---
+Linux utility that archives things. Many files into one file, no compress or compact. Used to create tape backups.
+Order of operations is pertinent
+tar -cf [newfile].tar [files]		-> creates a file
+tar -xf	[file].tar			-> extracts files 
+tar -t					-> shows tar data
+tar -v					-> verbose
+tar -zcf				-> gzip
+tar -tvzf				-> show tar giz data
+tar -zxvf				-> verbose ungzip
+tar -jcf				-> bzip2
+
+
+Compressing
+-----------
+gzip
+gzip -9 [archivo1] [archivo2] &
+bzip2 	
+zip -r [file].zip [folders]
+xz --compress
+
+gunzip
+bunzip2 or bzip2 -d
+unzip [file].zip
+xz --decompress or -d
+
+File Descriptors - I/O stream redirections
+------------------------------------------
+/dev/std*	-> /proc/self/fd/0,1,2
+stdin		-> 0
+stdout		-> 1
+stderr		-> 2
+1> [file]	-> stdout redirection; not append
+2>> [file]	-> stderr append
+[command] <	-> input redirection
+
+init 0	-> halt
+init 6	-> reboot
+
+
+Processes:
+----------
+PID
+ps
+   a					-> all
+   u					-> user
+   x					-> select processes without controlling ttys
+   t					-> select by tty
+   U [user]				-> by user
+   -l					-> process priority
+ps aux == ps -ef
+   aux --forest				-> show processes with tree
+
+pstree					-> ps tree
+   -a					-> show parameters used to start
+   -p					-> PID
+
+Memory:
+-------
+free					-> show memory Kb
+   -m					-> show in Mb
+   -g					-> show in Gb
+   -h					-> human readable
+   -c 5					-> for 5 times
+   -s 5					-> every 5 second
+
+
+uptime					-> show system info: current time, since when was turned on , users, load average
+
+Signals:
+--------
+Interprocess communication (IPC)
+zombie orphan process
+SIGHUP					-> 1  shutdown and restart nicely
+SIGINT					-> 2  interrupts a process
+SIGKILL					-> 9  shutdown forced
+SIGTERM					-> 15 stop nicely
+SIGSTOP					-> 16 stop but don't remove process ID
+SIGTSTP					-> 20 pausing something in terminal and moving it to background 
+kill -[SIGNAL] [PID]			-> kills it
+killall [service_name]			-> kills all with that name
+pkill -[SIGNAL] -U [userID]		-> kills all by user ID
+pkill [process]				-> try and gently stop all child processes for that process
+shutdown -k				-> warning message only
+
+
+Jobs:
+-----
+Foreground, interactively using in the front
+Background
+jobs					-> show id for jobs
+bg [id]					->
+[command] &				-> execute on background
+nohup [command]				-> execute command without terminating it when terminal is closed
+
+standard priority: 80
+nice:
+highest priority could be given: -20	-> more CPU time
+lowest priority could be given: 19	-> less CPU time
+nice [process]				-> run a program with modified scheduling priority
+renice +19 [PID]
+
+
+Screen:
+-------
+screen					-> to start it
+CTRL+A C				-> creates a new session
+CTRL+A P or N				-> move back and forth
+screen -r				-> re-attached
+
+
+
+COMMANDS
+--------
+.					-> current directory
+..					-> previous directory
+ls -d					-> list directories
+touch [fileCreated]			-> modifies date
+touch -c				-> doesn't create the file if it doesn't exist
+touch -d [date]				-> modifies date with the date especified
+touch -t [YYYY][MM][DD][HH][MM]		-> modifies date with the specific date
+rm					-> remove file
+mv					-> move file
+cp					-> copy file
+   -p					-> preserves mode, ownership and timestamp
+   -u					-> copy only when the timestamp is newer
+   -r					-> copy recursively (for directories)
+   -i					-> ask before overwritting
+   -f					-> no prompt about overwritting
+   -x					-> for other devices on the network
+dd if=[devices]	of=[file.iso or img]	-> Use for backups. Example: creates an iso file of your device
+dd if=[device] of=[.img] count=1 bs=512	-> Copy master boot record
+mkdir -p				-> create parent directories until its child, recursively
+file [file]				-> gets information about the file type
+stat					-> gets information about the device the file is
+   -f [file]				-> gets file information (metadata) about it
+   -t [file]				-> space delimited file information
+mpstat
+vmstat 1 5				-> check CPU & other hardware info
+head/tail				-> read first or last 10 lines
+tail -f [file]				-> follow file input lines
+tail -f -s <sleepInterval> [file]	-> follow file input lines with timeframe
+find [directory]			-> locate files
+  -type d				-> directories only
+  -type f				-> files only
+  -iname "[name]"			-> (i) without case sensitive			
+  -exec [command] {} \;			-> Execute a command on the results of find, placeholder: {} -> every line that matches the search
+  -delete				
+  -user "[user]"			-> files belong to users
+  -perm -4000				-> Look for SUUID
+  -mtime +3				-> gets files modified at least 3 days ago
+
+grep [string] [file]			-> search for a string in our file
+  -i					-> both capitalize and lowercase string
+  -n					-> line number
+  -v					-> line in a file match
+  -cv					-> count how many ocurrencies of a string
+pgrep					-> further options like REGEX
+egrep
+fgrep					-> grep -F; searches for fixed string
+  -f [pattern file] [file]		->
+sort [file]				-> organize alfabetically text in a file; DON'T CHANGE FILE
+  -r					-> reverse alfabetically
+  -n					-> organize numerically
+  -k					-> select column
+cut -c2-4 [file]			-> gets data in columns 2 to 4 from a text file
+  -c2,4					-> gets data in columns 2 and 4 from a text file
+  -d" "	-f2				-> delimeter by space and get field 2
+wc					-> lines, word and character count
+  -w					-> word count
+  -c					-> character count
+  -l					-> line count
+nl [file]				-> number lines of a text file without blank lines
+  -ba					-> assigning blank lines
+expand -t 10 [file]			-> makes tab to 10 spaces. usefull for files with tabular spaces
+paste					-> concatenate files
+join					-> gets matches on files
+uniq					-> gets just 1 record of line, no duplicated
+   -d					-> gets duplicated lines
+   -D					-> gets duplicated and all its lines
+diff [file1] [file2]			-> difference between files
+cat					-> display a file in stdout
+tac					-> cat backwards lines
+split -a 3 -l 10 [file]			-> split file into files of 10 lines and name for files is 3 letters long besides x
+split -b 100 [file] [start word]	-> split file into files of 100 bytes and name for files starts with a word and then 3 letters long besides x
+od [file]				-> show binary file in octogonal format
+pr [file]				-> show file for printing
+  --columns=2				-> into 2 columns
+  --header=""				-> name of the file
+fmt -10 [file]				-> 10 characters in line
+tr 'a-e' 'A-E' < [file]			-> For characters, replace a to e with A to E
+sed -e 's/the/THE/g' [file]		-> Subtitue (s) the with THE for all instances (g); only shows
+   -f [sed options list] [file]		-> 
+more -d [file]				-> show options, moves fowards
+less   					-> allows movement backwards (b and d)
+clear					-> no always work after reading binaries
+reset					-> reset terminal
+date	 				-> get date
+tee					-> show stdout and send stdout to a file
+xargs					-> build and execute command lines from standard input 
+
+fuser [archivo]			 	-> shows which PID is using a file
+  -m					-> show which PID is using a FS
+cat /proc/meminfo			-> memory
+crontab -l				-> ver todos los procesos del cron
+crontab -e				-> editar el cron con el editor fijado por Linux (vi)
+top 					-> process running
+  k					-> kills a process
+  r					-> modify priority
+  m					-> memory usage
+  load average				-> competing for CPU time
+mtop					-> MySQL monitor
+htop					-> advanced top
+ln -s [fileLinked] [newFile]		-> Symbolic link
+
+cat FILE | wc -l			-> word count for file
+finger [user]				-> information about user
+id [user]				-> information about user ID
+pwck					-> check missing users
+pwconv					-> synchronize passwd and shawod files
+
+logger -f				-> logs messages to specified file /usr/bin/logger
+
+
+Links
+-----
+hard links must be done to same FS; points to inodes
+ln -s [fileLinked] [newFile]		-> Symbolic link; if file is removed, link becomes orphan
+
+
+
+sed -i -e 's/\/var\/log/\/var\/logs/g' filename	-> changes /var/log to /var/logs in all lines
+ecryptfs-unwrap-passphrase
+
+dd if=/dev/xvdf of=/dev/xvdf bs=1M		-> zeros
+/etc/vi fstab					-> File system tab para montar
+
+
+Permissions:
+------------
+rwx|s|t|T		-> (4)421 | sticky bit is binary
+x in directories	-> you can access it
+chmod 700 [file]	-> modify permissions
+chmod ugo+w [file]	-> user, group, other; add write permission
+chown [user] [file]	-> modify owner
+chmod +t or 1000	-> Sticky bit permission, only the directory's owner or file's owner can rename or delete files instead of anybody with write permissions
+chmod -R		-> recursively
+  -c			-> show file changed (very usefull)
+  -v			-> verbose
+umask			-> default permissions for files 666 and directories 777 for a user; 0 user group all
+chmod 2775		-> (2) SGUID
+chmod 1775		-> stiky bit; can't remove files of another user from the group
+
+
+
+Users:
+------
+adduser				-> create user
+useradd [username]		-> create user
+  -D				-> show defaults config
+  -c				-> fullname
+  -e				-> user account expired date
+  -g				-> specify user group
+  -G				-> add additional groups
+  -M				-> create without a home directory
+  -m				-> create and specify the home directory
+  -p				-> set password
+  -r				-> setting up a system user
+  -s				-> set shell
+  -d				-> set home directory
+  -k				-> set skel directory
+  -u				-> user ID
+usermod				-> modify user
+  -L				-> lock account
+  -U				-> unlock
+
+userdel				-> delete user
+  -r				-> mail, print jobs, cron jobs and home directory; leaves orphan files
+groupadd			-> group add
+groupmod			-> group modify; changing group IDs
+groupdel			-> group delete
+chage				-> change age for their password
+
+passwd [user]			-> change passwod
+  -S [user]			-> show password details
+  -l				-> lock password
+  -u				-> unlock
+  -d				-> delete
+  -n				-> minimum days for changing password
+  -m				-> maximum days for changing password
+  -w				-> warn users
+
+Group & user IDs:
+-----------------
+99: nobody
+100: user groups
+getent				-> get entity
+/etc/login.defs			-> default values for managing users
+nsswitch			-> How login works for users
+securetty			-> root login for terminals
+/etc/skel/			-> skeleton files that will be copy to the home directory when creating an user
+/etc/default/			-> default variables for ADDUSER command
+
+Cron jobs
+---------
+Primary scheduling jobs in linux
+systemctl crond status			-> service for cron
+crontab utility
+/etc/cron.d				-> includes a 6th parameter for defining which user
+/var/spool/cron				-> a list of all user and root cron jobs
+cron.allow				-> empty then only root user is able
+cron.deny				-> empty then all users are able
+Structure:
+Minutes Hour DayOfMonth Month DayOfWeek Command
+0-59	0-24	1-31	1-12	0-7 (0=Sunday)	
+*	*	*	*	*	root ls -al	-> every minute, every hour, every day, every month, every day week
+0,2,4					-> specify hours
+0-4					-> range
+*/2					-> every 2 hours
+
+crontab -l				-> list cron jobs
+  -u [user] -l				-> list an user cron jobs
+  -e					-> editor for cron
+
+Anacron
+-------
+Run and catch up jobs that were not executed during an outage. The lowest level of scheduling is 1 day.
+/etc/anacrontab
+Period in days    delay in minutes    job identifier    command
+1		  10		      my.job		ls -al
+
+at 12:35 AM today	-> command
+atrm [ID]		-> remove job by ID
+atq			-> list jobs
+atd			-> service for at command
+var/spool/at/		-> directory for jobs
+/etc/at.allow		-> empty then only root user is able; the first rules
+/etc/al.deny		-> empty then all users are able
+Lack of ALLOW or DENY prevents any user other than root from running an 'at' job
+
+
+
+Dates and timezone
+------------------
+Drift is difference between system clock and real time clock.
+
+date					-> show date, time and timezone
+  +"%d"					-> shows day digit; %H,%m,%d,%M,%Y
+  +"%H:%M-%d%m%Y			-> shows hour:minutes-DateMonthYear
+  +"%z"					-> time zone off set
+date mmDDHHMMYYYY			-> changes the date and time
+hwclock					-> utility for hardware clock; -0.X seconds error; unaware of timezones
+  -r					-> Show hardware clock system time
+  --systohc				-> set system clock to hardware clock
+/etc/localtime				-> link for local timezone
+/etc/adjtime				-> track calibration between hardware clock and system clock
+/usr/share/zoneinfo			-> binary files with all timezones
+$TZ					-> env variable for setting time zone
+tzselect				-> selecting timezone
+timedatectl				-> show timezone and options 
+timedatectl list-timezones		-> list timezones
+timedatectl set-timezone [timezone]	-> set timezones
+/etc/localtimezone			-> link file for current timezone
+
+Get text is a library
+locale -a			-> list them
+LANG				-> region setting for your user
+LANGUAGE			-> 
+LC_ALL				-> overwrites env locale
+LC_XXX				-> 
+iconv -c -f ASCII -t [char]	-> clear unknown characters, from ASCII, to 
+
+converts characters into the 
+
+NTP
+---
+network time protocol
+yum install ntp			-> installs client and service
+ntpd				-> service 
+/etc/ntp.conf			-> configuration file
+ntpq				-> NTP queue for queuering NTP servers 
+  peers				-> showing data connection; shows a list of time servers you are associated with
+  associations			-> servers that you're connected to
+ntpdate				-> force system clock to synchronize to configured network time server
+
+SYSLOGS
+-------
+Copy log file and trunc the log file in usage.
+syslog.conf			-> configuration for logs
+logger				-> adds string to messages log
+  -i				-> thread pit for that log file
+journal				-> binary file; better
+journalctl			-> information
+  -o verbose			-> verbose
+  -f				-> follow messages being created
+  -u httpd			-> logs for specificied services, in this case HTTP
+  -xe				-> Augment log lines with explanaition texts
+  -e				-> jump to the end of the journal
+/etc/systemd/journald.conf	-> Configuration file. Logging facility in systemd
+lograte				-> utility for handling rotation of log files
+/etc/logrotate.conf		-> Configuration file
+/etc/logratote.d/		-> log rotation configuration files for specific utilities
+
+MTA - Mail transfer agent
+-------------------------
+Sendmail: Legacy email server, prone to security issues and difficult to configure.
+Postfix: IBM developed. Policy support and separate processes
+Qmail:
+Exim: Simpler and monolithic
+
+SMTP: Simple Mail Transfer Protocol. Defines how email is transfered, part of the TCP/IP app layer and sets rules for email applications. 
+MUA: Mail User Agent. Application for handling emails.
+MSA: Mail submission Agent. Intermediary or gateway between MUA and MTA to start the transfer of email.
+MTA: Mail Transfer Agent. Accepts email from MUA and sends it to the receiving mail server
+MDA: Mail delivery Agent. Receives email from MTA and delivers to the local mail spool for retrieval by clients e-mail apps. Could be a MTA. Primary 				  function is to filter mail.
+Protocols
+POP: post office protocol. Used by MUA to get emails.
+IMAP: Internet Message Access Protocol. Used by MUA to get email.
+MX record: DNS mail record used by MTA to deetermine the authoritative mail server for any particular e-mail message.
+
+
+Sendmail
+--------
+mailx			-> package for mail handling
+mailq			-> check its receiving; 
+/var/spool/mqueue/	-> Mail queues. Contains email that has not been delivered to the appropriate local account.
+mail			-> check mails
+  -u [user]		-> check mails for a specified user
+mail [user]		-> send an email
+d1			-> delete mail 1
+q			-> quit
+/etc/aliases		-> set mail from root to a specific user; help_desk: | /opt/HelpDesk/createticket.sh
+newaliases		-> update aliases.db binary
+/var/maillog		-> log file
+~/.forward		-> txt file with email address or user account for forwarding mails
+
+
+Printers
+--------
+lpd						-> service; Line printing demon
+cups						-> service; has a web interface
+/etc/cups/cupsd.conf				-> Configuration file
+/ppd/						-> printer drivers
+lpstat -p					-> show printers
+  -d						-> default printer
+  -a						-> printers queues
+  -r						-> service running; scheduler
+  -s						-> system configuration 
+lpoptions -d [printer]				-> set the default printer
+  -l						-> show printers options
+lpadmin -p [printer] -E -v [path] -m raw	-> add a printer; enables it and send it to null; allow stream to print raw
+lprm [job]					-> removes printing job from the queue
+cat file | lp					-> print file
+lp -n [number]					-> print X number of copies
+lpr -P [printer]				-> print selecting a printer
+lpq						-> All jobs that are queued but not printed
+classes.conf					-> 
+cupsctl						-> configuration of your system
+cupsreject [printer]				-> do not accept request for printing; disable print queue; reject status
+cupsaccept [printer]				-> change from reject to accept status
+cupsdisable [printer]				-> Disabled the printer but the queue is open
+cupsenable [printer]				-> Enable printer
+/var/spool/cups					-> path 
+  /lpd						-> path
+ipp
+
+
+VIM
+---
+vim -g			-> GUI soported for x windows wrapper
+3 modes			-> command, insert, file_handler
+i			-> insert mode
+arrow keys		-> navigation
+up			-> k
+down			-> j
+right			-> l
+left			-> h
+w			-> next word
+e			-> last letter of the next word
+b			-> first letter of the previous word
+0			-> top of the line
+$			-> end of the line
+{			-> next paragraph
+%			-> move between estructures
+number + command	-> applies command x number of times
+
+:dd			-> erase word
+x			-> erase character
+:p			-> paste
+n			-> next
+/[string]		-> search
+\			-> escape character
+
+a			-> append at the cursor place
+o			-> insert mode at the end of the line
+r			-> replace
+u			-> undo
+.			-> redo
+dd			-> delete entire line from the buffer
+dw			-> erase word and its next space
+d0			-> delete
+d$
+4i			-> 4 times insert
+
+yy			-> yank the line; copy
+p			-> paste
+			-> cut
+v			-> mark mode
+>>			-> indent
+<<			-> remove indent
+/[word]			-> search from top, n next iteration, N previous
+?[word]			-> search from bottom
+: %s/x/X/gc		-> replace s/ substitue x with X, g for the whole file, c to confirm
+: ! [command]		-> run in my default shell
+: r ! [command]		-> read in and display in my file the command
+:16,23 ! sort -r	-> takes values from line 16 to 23 and sort them
+
+:q			-> exit
+:wq			-> write the file and quit
+:q!			-> exit without saving
+CC			-> write and exit
+:saveas [newfile]	-> creates a new file and saves changes
+
+:bad			-> give me a buffer address
+:ls			-> show files in buffer
+:bn			-> switch next buffer; CRTL+6
+:f			-> file properties
+
+
+X11, X Server, windows manager, desktops environment
+----------------------------------------------------
+yum group install "X Windows System" "Desktop" "Desktop Plataform"		-> installs window manager, display manager, x windows system core
+apt xserver-xorg-core
+Display managers: xdm, gdm
+
+/etc/X11
+/etc/X11/xorg.conf			-> configuration file; Screen section for resolution
+X -configure				-> configure X window server
+Xorg -configure				-> configure X window server
+xfs					-> service for X server
+
+xwininfo				-> information about a window selected by the mouse
+xdpyinfo				-> information: X.Org version, color depth, screen resolution
+xhost					-> Current state of access control for remote X connections
+xhost +[IP]				-> add i to that IP
+xhost -					-> enable it, $DISPLAY
+
+systemctl status lightdm		-> Display manager service
+/etc/lightdm/				-> configuration files
+/etc/X11/prefdm				-> set $DISPLAYMANAGER for defining GNOME or KDE
+
+GOK: Provides an on screen keyboard
+Orca: Reads the text of any screen with focus
+
+
+CTRL + C				-> halt process
+
+Disk:
+du --exclude=./opt -sh *		-> tamaño total de los todos los archivos del directorio sin OPT
+
+du -ah -time [directorio]		-> show modification time
+df -lhP					-> file system disks
+lsof					-> list of open files
+
+find [path] -name 'fname'		-> find all types in path
+find [path] -type f -exec {} \;		-> get files in path
+find [path] -delete
+
+--max-depth=2 -> -d 2
+
+
+Nulling:
+ln -s /dev/null [all directory path / filename]  -> hard link to null
+cat /dev/null > [all directory path / filename]  -> sends null to overwrite file
+
+Compress:
+gzip -9 < [file] > [file].gz    -> comprime en uno nuevo sin borrar el original
+
+kill [PID]		--> manda señal para terminar
+kill -kill [PID] 	--> mata completamente
+service --status-all
+
+
+curl -IL -H "Host: www.cookingchanneltv.com" http://dispatcher1.prod.sni.cookingchanneltv.com/shows/big-bad-bbq-battle.html
+curl -IL URL		--> redirects
+
+lsof | head -1; lsof | grep -i logs	-> buscar directorios o archivos q pueden tener logs
+lsof | head -1; lsof | grep -i deleted  -> ver achivos borrados por un PID que los referencia
+kill -HUP [PID]
+
+
+/var/lib/jenkins/jobs/Core/jobs/Tasks/jobs/AEM-REPORTS/jobs/Gather-ProdAuth-RecipeInfo/builds
+/var/lib/jenkins/jobs/Home/jobs/Jobs/jobs/deployToLowerEnvironments
+/var/lib/jenkins/jobs/Core/jobs/Sandbox/jobs/RecipeMigrationMultiJob/builds/117 -> Jenkins Logs
+/opt/searchETL/framework/log/felix.log 		-> felix log
+
+su -l dayuser -c '/opt/day/cq5/author/crx-quickstart/bin/start'
+
+parallel --jobs 3 [.sh] ::: []
+
+DNS records
+dig [URL] [TXT]		-> evaluates records for URL; it could also work without [TXT], showing all
+
+
+stat [file]			-> view complete timestamps
+nc -vz URL 3306 		-> Netcat port check
+
+hostname
+hostname -f
+nmtui -> para redhat
+tee -a 			-> muestra en pantalla
+lsb_release -a  	-> os version
+cat /etc/*-release 	-> os version
+
+netstat		-> status of network
+route		-> shows routing table
+ifconfig	-> net configuration of our network card
+ip addr		-> all ip addresses assigned
+
+uname -s	-> display linux kernel name
+uname -n	-> hostname
+uname -r	-> kernel realese number
+uname -v	-> kernel version number
+uname -m	-> Architeture type
+uname -p	-> Processor type
+uname -i	-> hardware plataform
+uname -o	-> operating system
+uname -a	-> ALL
+
+netstat -ptnla
+netstat -ptnlu
+netstat -rnv
+
+
+cat .bash_history	-> command shell history
+
+EC2 instance meta-data
+http://169.254.169.254/latest/meta-data/
+
+
+scripps-sh IP or ID
+
+sudo find /opt/day/html -name "*.css" -type f -delete
+
+
+PACKAGE MANAGERS
+----------------
+aptitude				-> manages debian packages and its dependencies
+/etc/apt/				-> directory
+
+repository				-> location with packages
+deb URL [distro] 			-> binaries
+deb-src	URL [distro]			-> source files
+
+apt-get update 				-> udpates local caches of repositories in source list files. Gets all packages from repos
+apt-get upgrade				-> upgrades all programs
+apt-get dst-upgrade			-> upgrade the distribution
+apt-get install -d			-> downloads .deb files in /var/cache/apt/archives/; doesn't install it 
+apt-get download
+apt-get install	
+apt-get install -f			-> fix dependencies missing
+apt-get -f upgrade			-> fix upgrade. Downloads dependencies flagged
+apt-cache search			-> search for a package
+apt-cache show				-> further information about the package
+apt-cache showpkg			-> MORE information about it
+add-apt-repository ppa:URL
+apt-get clean
+apt-get remove --purge
+
+yum					-> package manager for rpm
+/etc/yum.conf				-> configuration file with repos
+/etc/yum.repos.d			-> repos
+/var/yum/log				-> installed apps
+yum update				-> updates cache from repos
+yum install [app]			-> installing
+yum list installed
+yum search
+yum deplist
+yum clean packages
+yum clean all
+yum install -enablerepo			-> single transaction
+yum --downloadonly			-> download rpm
+yumdownloader				-> download rpm
+yumdownloader --source			-> download source
+yumdownloader --urls			-> get urls where its downloading from
+yumdownloader --resolve			-> download with dependencies
+yumdownloader --destdir			-> define directory to download
+yum autoremove
+yum clean all
+yum downgrade [app]			-> 
+
+T3l3tech
+
+Debian Package Management system
+--------------------------------
+Installing single application without dependencies
+KDE: Kubuntu-desktop
+
+dpkg --add-architecture i386
+dpkg -i [file].deb		-> installs
+dpkg --get-selections		-> lists applications installed
+dpkg -l
+dpkg --remove [app]		-> remove binaries, not config files
+dpkg --purge [app]		-> removes configurations files
+dpkg --info [app]		-> shows info
+dpkg --status [app]		-> shows if installed
+dpkg --remove [app]		-> remove package file
+dpkg --purge [app]		-> removes everything
+dpkg --listfiles		-> list files in the package that will be installed
+dpkg -L
+dpkg --search			-> 
+dpkg -i --force-reinstreq [deb]	->
+dpkg-reconfigure [pkg]		-> restart the configuration for a package
+
+
+Red hat package manager
+-----------------------
+/var/lib/rpm			-> database files; binary
+rpm -ihv [app]			-> -i --installs, -h --hash progress bar, -v --verbose
+rpm -qi	[app]			-> information about package
+rpm -qR [app]			-> required dependencies
+rpm -q [app]			-> check if app is instaled
+rpm -ql [app]			-> lists dependencies and app paths
+rpm -e [app]			-> removes app
+rpm -qip [app]			-> search from rpm; p is for not installed
+rpm -ivh --force		-> force
+rpm -ivh --nodeps		-> install without dependencies
+rpm -V				-> 9 fields;
+rpm -Uhv			-> install and remove previous version
+rpm2cpio [app] > [file]		-> install in a non rpm system
+rpm --checksig			-> verify the signature on a package to determine its integrity and origin
+cpio -idmv < [file]		-> 
+
+
+
+ntp date
+sync
+put
+
+TMUX -> multi terminals
+
+Cloudaware
+User: sni-l2@globant.com
+PASS: I92MN608bTh0GYClksZN
+
+Rundeck OCC: opskzlp0017.snops.net
+
+f3a05dec13982090eb8b4bbc52eac6b2
+Jenkins --> Ash Nelson
+
+Support Desk:865 560 4040
+
+ScrippsNetworks/CloudServices/contents/sumo/install_sumo.bash
+
+APAC
+sni-l1@globant.com
+n3wp4ss
+
+GULA: 10.49.1.74
+
+error.log -> cycling restart %
+
+TEST
+VPC  : vpc-46d42e23
+Subnet  : subnet-4e942438
+SG  : dmascietti-vault-test // lnievas-freeipa-test
+
+Rundeck: i-017e5a637ea38b50d - 10.49.128.142:4440
+freeIPA: i-0b75c336eecd71d4b - 10.49.128.175
+PEM: shared_services.pem
+
+The IPA Master Server will be configured with:
+Hostname:       freeipa.snidigital.com
+IP address(es): 10.49.128.175
+Domain name:    snidigital.com
+Realm name:     SNIDIGITAL.COM
+
+Certificate:
+https://letsencrypt.org/
+
+curl --insecure -v http://www.google.com 2>&1 | awk 'BEGIN { cert=0 } /^\* Server certificate:/ { cert=1 } /^\*/ { if (cert) print }'
+echo | openssl s_client -showcerts -servername www.food.com/topic/main-dish -connect www.food.com/topic/main-dish 2>/dev/null | openssl x509 -inform pem -noout -text
+https://cis.technion.ac.il/en/central-services/communication/install-juniper-ubuntu/
+
+/opt/apps/search-etl/log/felix.log
+
+sudo openconnect --juniper -u '#usuario' 'https://connect2vpn.scrippsnetworks.com'
+ssh -i /path/my-key-pair.pem ec2-user@ip
+ip r
+
+zsh		-> shell interpreter advance from bash
+oh-my-zsh	-> IDE framework for zsh | gnome-terminal needs to be setup in profile preferences
+guake		-> terminal F12
+
+
+IAM ACCESS with Role
+sts_client = boto3.client('sts')
+assumedRoleObject = sts_client.assume_role(
+	RoleArn=args.assume,
+        RoleSessionName="AssumeRoleSession")
+credentials = assumedRoleObject['Credentials']
+aws_session = boto3.Session(
+        region_name=args.region,
+        aws_access_key_id=credentials['AccessKeyId'],
+        aws_secret_access_key=credentials['SecretAccessKey'],
+        aws_session_token = credentials['SessionToken'])
+
+
+seq -f '%02g' --> -f format
+The format %02g specifies minimum width of 2. You can use %0m.n syntax where m is the minimum width of characters and n is the number of decimals.
+When given large numbers, g switches to scientific notation while f just uses more spaces. Similarly, g switches to scientific notation, when needed, for small numbers.
+
+>>> print "%07.1f, %07.1f, %07.1f" % (.01, .0001, .000001)
+00000.0, 00000.0, 00000.0
+>>> print "%07.1g, %07.1g, %07.1g" % (.01, .0001, .000001)
+0000.01, 00.0001, 001e-06
+
+which vncserver		--> looks for App's path
+vncpasswd
+vncserver		--> starts service
+port 5901
+ip :: port
+vncserver -kill :1
+sudo systemctl enable vncserver@:1
+sudo systemctl start vncserver@:1
+sudo systemctl status vncserver@:1
+
+
+
+Apps:
+gimp		-> == PHOTOSHOP
+thunderbird	-> email application
+shutter		-> screen capture
+
+wget https://...	-> Downloads file
+
+
+
+OSI Model:
+----------
+    Layer		          Protocols
+7- Application	-> HTTP / FTP / Telnet / SMTP / SNMP / DNS
+6- Presentation	-> HTTP / FTP / Telnet / SMTP / SNMP / DNS	-> uncompress scrambled data
+5- Session	-> HTTP / FTP / Telnet / SMTP / SNMP / DNS	-> Simplex, Half-duplex, Full-duplex
+4- Transport	-> TCP / UDP 					-> Reliable / Unreliable connection -> uses PORT
+3- Network	-> IP (ICMP)					-> Data sent in packets
+2- Data Link							-> Logical Link Control (LLC)
+								-> Medium Access Control (MAC)
+1- Physical							-> Cables
+
+
+IP - Internet Protocol
+----------------------
+Network layer protocol which delivers packets to network devices. Uniquely identifies a destination address for a specific system
+IPv4		-> 4 octets; ranges 0 - 255 for each octet
+IPv6		-> 128 bit Hexadecimal
+
+octet rule	-> eight-bit binary number, 10101010.01010101.00110011.11001100
+
+
+
+TCP - Transmission Control Protocol
+-----------------------------------
+Connection-oriented transport protocol which ensures that a packet is reliably sent to another device. The method that communicates all transactions between IP addresses. Defines a system of transmissions and acknowledgement.
+
+
+UDP - User datagram protocol
+----------------------------
+Connectionless transport protocol used which don't guarantee that a packet arrives because the overhead of a connection isn't required. No error checking or retransmission of packets.
+
+
+ICMP - Internet Control Message Protocol
+----------------------------------------
+Designed for networking devices to send error messages. It can perform queries around network service availability. Example ping
+
+
+Private IP class ranges
+-----------------------
+RFC 1918. This determines the total number of hosts that are available for each class.
+
+	Class			IP Adresses			Subnet Mask
+  A ->   1 - 126	->  10.  0.0.0 -  10.255.255.255   ->	255.  0.  0.0	-> 126 Networks | 16.7 million nodes available
+  B -> 128 - 191	-> 172. 16.0.0 - 172. 31.255.255   ->	255.255.  0.0 	-> 16.384 Networks | 65.534 nodes
+  C -> 192 - 223	-> 192.168.0.0 - 192.168.255.255   ->	255.255.255.0 	-> 2.097.152 Networks | 254 nodes
+  D -> 224 - 239	-> multicast and not used for host addresses
+  E -> 240 - 254	-> reserved for future use
+Example
+192.168.0.1/24 -> Class C and subnet mask C
+
+Loopback: 127.0.0.1 -> local address
+
+Subnet Mask
+-----------
+Defines the portion used by the Network for IP address. The bit number designated by the /
+CIDR: Classless Inter-Domain Routing notation.
+Class A: /8
+Class B: /16
+Class C: /24
+
+Example:
+Network <- 192.168.0 || .1 ->Node
+Network: 3 octets	-> 255.255.255
+Node: 1 octet		-> 0
+Subnet Mask		-> 255.255.255.0
+
+Gateway
+-------
+The destination where network traffic goes that has no other matching route, or it is not intended for the local system network itself.
+
+Broadcast address
+-----------------
+Every network uses last octet, 255. Everybody receives on that address
+Example: 192.168.1.0/24	-> 192.168.1.255
+
+Services & Ports
+----------------
+Service		PORT
+FTP		20/21
+SSH		22
+Telnet		23
+SMTP		25
+DNS		53
+HTTP		80
+POP3		110
+NTP		123
+NETBIOS		139
+IMAP		143
+SNMP		161/162
+LDAP		389
+HTTPS		443
+SMTPS		465
+SYSLOG		514
+LDAPS		636
+IMAPS		993
+POP3		995
+
+NAT - Network Address Translation
+---------------------------------
+NAT router creates a private IP on the LAN and a public IP which internal network connects with outside networks
+
+Network commands
+----------------
+ping				-> testing connectivity using ICMP (and its port)
+ -c 5				-> ping 5 times per second
+ -i 2				-> ping in interval per second
+pin6				-> ping using IPv6
+dig				-> lookup IP address for DNS names
+netstat				-> list network connections, routing info, NIC info
+  -a				-> show all sockets
+  -ap				-> show all sockets with PIDs
+  -t				-> tcp sockets
+  -i				-> stats for network interfaces
+  -l				-> listening sockets
+  -s				-> summary of protocols
+  -c 5				-> refresh every 5 seconds
+traceroute			-> Traces the route of a packet takes
+traceroute6			-> trace using IPv6
+tracepath			-> Trace route; Hop reversing might not be available (no reply)
+ip addr show			-> Shows IP address and interfaces settings
+
+
+ifconfig			-> Network settings; lo = local loopback
+  HWaddr			-> MAC Addres; unique
+  inet addr			-> IPv4
+  Bcast				-> Broadcast address
+  Mask				-> subnet mask
+  inet6 addr			-> IPv6
+  RX packets			-> received packets
+  TX packets			-> transmitted packets
+ -a				-> Show all Network interfaces information
+ifup [eth0]			-> enable interface
+ifdown [eth0]			-> disable interface
+
+/etc/hosts
+/etc/sysconfig			-> Network configuration services and config files
+/etc/sysconfig/ifcfg-[eth0]	-> Config file
+/etc/sysconfig/network-scripts	-> scripts responsible for interface configuration and state
+service network restart		-> services
+
+route table
+-----------
+Destinations	Gateway
+192.168.1.0	  *	-> do not go to gateway; stay in the local network
+
+netstat -r			-> show route tables
+ip route show			-> show route tables
+netstat -rn			-> show route tables with no names
+route add [IP] gw [IP]		-> add a route record to the route table
+route del [IP] gw [IP]		-> delete a route record to the route table
+
+Fowarding / making it a router
+/prc/sys/net/ipv4/ip_foward	-> 0 turn off; 1 turn on; file read by the kernell
+/etc/sysctl.conf		-> config file; Setting as a router net.ipv4.ip_forward=1
+
+
+DHCP
+----
+dhcpd		-> demon
+dhcpd -k	-> restart demon
+pump		-> release the IP address and request a new one
+dhclient	-> 
+
+traceroute	-> uses ping packets, ICMP
+
+
+DNS
+---
+Domain named server
+/etc/hosts			-> modifying entries 
+/etc/resolv.conf		-> configuration file; 
+/etc/nsswitch.conf		-> configuration file; hosts order
+
+bind-utils			-> Lib package
+host [dns]			-> resolve hosts IP
+getent hosts [dns]		-> resolve hosts IP
+dig [dns] [record type]		-> resolve DNS for record type
+
+
+
+GIT
+---
+git config --global user.name "[XXX]"			-> set global name
+git config --global user.email "[XXX]"			-> set global email
+git config --system core.editor "/bin/vim"		-> set VIM as editor
+/etc/gitconfig
+git config --global core.excludesfile			-> check global exclutions
+git config --global core.excludesfile '/etc/gitignore	-> creates a file to ignore globally especifed files or directories
+.gitignore						-> ignores locally files in the local repo directory
+
+git init .						-> initializing repository or set directory as repo; creates .git directory
+rm -rf .git						-> it becomes a simple directory
+git status						-> Shows branch; missing commits
+git add .						-> stages files to get commited; adds to DB for tracking puporses
+git commit [file or not] -m "[message]"			-> only applies for creating files; everything is commited to the repository
+git rm [file]						-> stage it for commit
+git clone [local repo path]				-> clone in the same system
+git clone [user]@[hostname]:[relative] .		-> clones using SSH
+git clone https:// [newfoldername]			->
+git push origin [BRANCH]				-> pushes from origin (local) to the repo
+git fetch						->
+git branch						-> shows branches
+git branch [newBranch]					-> creates a branch
+git checkout						->
+git checkout -b						->
+git squash						-> gathers all commits together
+git merge [branch]					-> stand on master and merge branch
+
+GIT Log
+-------
+git log							-> all changes commited to our repository in our current branch
+git log --oneline					-> 7 digits of the commit ID and the messages
+git log -p						-> summary of transactions from the DB
+git log -- [file]					-> specific file
+git log --author=""					-> changes from a specific user
+git log --grep=""					-> look for specific words
+git log --graph --decorate				-> colors and tree view
+
+
+Coupon Code: LINUXAC2017
+
+
+Python
+------
+dir()
+repr()
+python					-> python interpreter
+import this				-> Python Filosophy
+Instalation Packages: python and python-pip
+CTRL+L
+
+
+commands
+type(var)				-> shows the type of the variable
+string in var				-> returns a boolean if string is in variable
+var.find(string)			-> gets position
+var[0:6]				-> gets characters from 0 to 6
+  [-7:]
+  [5:]
+var.replace(string,newString)		-> replace with string
+var.strip()				-> removes whitestrip and new lines
+' '.join(tuple)				-> makes a string from a tuple
+var.isdigit()				-> boolean
+range(1,10)				-> creates a list from 1 to 10
+var.splitlines()
+var.split()
+print " %s %s" %(first,second)		-> printing variables
+with cd(pathvar)
+
+List
+----
+list.append(item)			-> add item to the list
+list.index(item)			-> gets positions
+len(list)				-> gets #items
+list.remove(item)			->
+list.insert(position,item)		->
+list.count(item)			-> how many times item shows
+
+Dict
+----
+dict = {'key':'value'}
+dict.keys()				-> returns a list
+dict.values()				-> returns a list
+dict.get(value, not found value)	-> returns boolean or another value if key is in dict
+dict[key]=value				-> add key/value
+dict.items()				-> creates a list of tuples
+del user[key]				->
+
+Modules
+-------
+subprocess
+  check_output(['command','option'])
+  partition_usage_threshold
+plataform
+  linux_distribution()			-> tuple
+random
+  randint(0,100)			-> random intenger from 0 to 100
+csv
+  reader(file)
+urllib2
+  response.read() = urlopen(url, timeout = 60)
+time
+  time()
+re					-> regex
+  search(string,variable)
+  groups()
+json
+  loads(str(var))
+  dumps(var, indent=4)
+fabric
+bs4
+  BeautifulSoup(html_data,"lxml")
+  find_all('html_tag', attrs={'class':'...'})
+lxml
+pandas					-> data analytics
+  read_csv(file)
+  head()
+  pivot_table(data,index=,columns=,values=)
+sqlite3
+  conn = sqlite3.connect('demo.db')
+  c = conn.cursor()
+  c.execute(''' SQL QUERY ''')
+  conn.commit()
+  c.fetchone()
+MYSQL-python
+MySQLdb
+  conn = MySQLdb.connect(host='', user='', passwd='', dbs='')
+  c = conn.cursor()
+  c.execute(" SQL QUERY ")
+  c.fetchall()
+
+List comprehension
+------------------
+
+
+Tuples
+------
+Faster because can't be modified. Always put a coma for first value
+tuple = ()
+tuple = set()
+tuple1 & tuple2				-> shows matches
+tuple1 - tuple2				-> shows unmatched
+
+Classes
+-------
+class Name():
+	def __init__(self):
+		self.first_name=''
+	def method(self,attr):
+		
+Jose = Name()				-> creator
+
+class Person(Name):
+
+Decorators
+----------
+wrappers?
+
+Generator
+---------
+Mantein state
+instead of return use yield
+
+
+Exceptions
+----------
+try:
+except Exception as var:
+	type(var).__name__
+	var.args
+else:
+
+Files
+-----
+with open(file,'r') as var:
+	lines = var.readlines()
+	var.write('txt')		-> uses 'w' option; 'a' is for appending
+
+Webserver:
+----------
+python -m SimpleHTTPServer 80		-> webserver for specific directory
+
+Virtual Environments:
+---------------------
+Packages installed here will not affect the global Python installation. 
+Any packages you install now using pip or easy_install get installed into my_new_app/lib/python2.7/site-packages.
+
+mkdir ~/virtualenvironment
+virtualenv ~/virtualenvironment/my_new_app --no-site-packages	-> creating a virtual env
+source my_project/bin/activate					-> start
+deactivate							-> exit
+pip freeze > requirements.txt					-> contains a simple list of all the packages in the current environment
+pip install -r requirements.txt					-> re-create an enviroment's libraries
+lsvirtualenv
+lssitepackages
+cdvirtualenv
+export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2.7		-> change the interpreter globally with an env variable in ~/.bashrc
+
+AutoENV: When you cd into a directory containing a .env, autoenv automagically activates the environment.
+git clone git://github.com/kennethreitz/autoenv.git ~/.autoenv
+echo 'source ~/.autoenv/activate.sh' >> ~/.bashrc
+
+
+
+
+YAML
+----
+import yaml
+file=(path,'r')
+yaml.load(file)
+yaml.dump(Dict, file, default_flow_style=False)
+
+
+
+Jenkins
+-------
+Jenkins listen on port 8080
+
+Instalation
+sudo wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins-ci.org/redhat/jenkins.repo
+sudo yum update
+sudo rpm --import https://jenkins-ci.org/redhat/jenkins-ci.org.key
+sudo yum install jenkins
+sudo yum install java
+sudo service jenkins start/stop/restart
+sudo chkconfig jenkins on
+
+Add shell to Jenkins user in passwd
+ssh-keys
+ssh-keygen
+ssh-copy-id
+add jenkins as root user?
+
+slave:
+adduser jenkins && passwd jenkins
+
+
+check firewalld
+firewall-cmd --zone=public --add-port=8080/tcp --permanent
+firewall-cmd --zone=public --add-service=http --permanent
+firewall-cmd --reload
+
+/var/log/jenkins/jenkins.log		-> logs
+/etc/sysconfig/jenkins			-> config
+
+nginx.conf
+
+elinks				-> text web browser
+
+
+
+SEliunx - Security Enhanced for linux
+-------------------------------------
+Is a Linux kernel security module
+getenforce					-> Enforcing = SE linux runing
+setenforce 0 && getenforce			-> Permissive = SE linux ports are opened
+sepolicy network -t http_port_t			-> gets a list of available ports
+semanaged port -a -t http_port_t -p tcp 8080	-> add port 8080 to available ports
+
+ROOT:
+su [user]					-> switch user
+sudo su						-> root, logging as that users; inherit all his environment
+su -						-> root, logging as that users; inherit all his environment
+sudo su -					-> Logs as root with your password, not using roots 
+su [user]					-> logging as that users; inherit all his environment
+/etc/sudoers					-> lists groupa and accounts that have root access
+visudo						-> export EDITOR=vim
+user ALL=(ALL) NOPASSWD ALL			-> define a user with root access
+%group						-> define a group
+
+Service managment:
+xinetd						-> running on demand services when they're called
+etc/xinetd.conf					-> configuaration file, line: include /etc/xinetd.d/* ; cps 50 10 -> 50 max, wait 10 seconds before executing next
+
+
+Encryptation
+------------
+GnuPG						-> utility for generating keys
+Seed / entropy system
+gpg --genkey
+gpg -a -o [filename] --export [key reference]	-> creates a public key referencing the previous key created
+gpg --import [public key]			-> import a public key
+gpg --list-keys					-> show keys
+gpg -e [file] -r [user]				-> encrypt a file
+gpg [file]					-> decrypt
+~/.gnpg
+
+SSH
+---
+/etc/ssh/sshd_config				-> configuration file
+~/.ssh/known_hosts				-> public key imported from the host is the same when connecting
+~/.ssh/authorized_keys				-> load pub keys
+ssh-keygen -b 2048 
+ssh-copy-id [host]				-> copy generated pub key to authorized_keys file and with specific hostname for connecting
+ssh -X						-> enable tunneling X windows connection
+ssh -x						-> disbale tunneling X windows connection
+
+SSH wrapper for only loading the key once
+ssh-agent bash
+ssh-add
+
+
+lsof
+find / -user root -perm 0755 -type f -exec ls -al {} \;
+rngd -r /dev/urandom
+
+
+Socket type:
+------------
+STREAM
+DATAGRAM
+RDM
+SEQUENCE PACKET
+
+
+SQL
+---
+SHOW DATABASES							-> available DB
+USE [db]							-> use DB
+SHOW TABLES							-> show tables
+SELECT * FROM [table] WHERE [clause] ORDER BY [field] DESC	-> show table data
+IN (range of values)						-> clause
+LIMIT 2								-> limits showing records to 2
+INSERT INTO table ( fields ) VALUES ( row1 ) ( row2 )		-> inserting
+UPDATE table SET field = value WHERE flied2 = value2 		-> update
+DELETE FROM table WHERE field = value				-> delete
+SELECT * FROM [table1] JOIN [table2] ON t1.field1=t2.field2	-> JOIN
+
+GROUPING FUNCTIONS
+------------------
+AVG
+COUNT
+
+
+mysql --user= --password= --host=
+
+
+
+plugins:
+bundle
+p8
+docopt
+retab
+172.31.37.103 - community
+
+yaml.safe_dump(, default_value_style=False)
+
+
+Vagrant
+-------
+Creates complete development environment, sandbox and VM. Idea of disposible resources.
+Creates via shell script or configuration management.
+package: download from website
+
+create folder
+vagrant init precise64 http://files.vagrantup.com/precise64.box		-> initiate a project
+vagrant init hashicorp/precise64					->
+
+vagrant up				-> bring up default virtual box
+vagrant suspend				-> like a Snapshot, the vm is freezed
+vagrant halt --force			-> force shutdown
+vagrant destroy				-> remove traces, hard disk, state files except for shared folders
+vagrant ssh [box]			-> access the VM created | default pass: vagrant
+vagrant stauts				-> show status
+vagrant reload				-> 
+
+Configuration File
+------------------
+Vagrantfile				-> configuration file; only 1 lookup path goes from / to current directory
+Vagrant.require_version ">=1.35"	-> change version
+
+config.vm.box = "precise64"
+config.vm.box_url = "http://files.vagrantup.com/precise64.box"
+  config.vm.define "web" do |web|
+	web.vm.hostname = "web"
+	web.vm.box = "apache"
+	web.vm.network "private_network", type: "dhcp"
+	web.vm.network "forwarded_port", guest: 80, host: 8080
+	web.vm.provision 
+  config.vm.define "db" do |db|
+	db.vm.hostname = "db"
+	db.vm.box = "mysql"
+	db.vm.network "private_network", type: "dhcp"
+  end
+end
+
+Boxes:
+------
+Boxes are files like templates; containing our base OS (minimal functions, like ssh)
+vagrant box list									-> list boxes
+vagrant box add precise64 http://files.vagrantup.com/precise64.box			-> add a box
+vagrant box remove									-> remove a box
+vagrant box repackage									-> Repakace in package.box file
+vagrant package [name]									-> [name] is a box already created and running. creates a file.box
+
+Pre bake boxes, create your own box:
+Vagrantfile
+.vmdk				-> compress hard file
+.ovf				-> Defines the virtual hardware
+.json				-> metadata
+
+
+Shared / Synced Folders:
+------------------------
+Shared folder exist both places, VM and locally so files are not lost when destroyed	
+
+Configuration line:
+config.vm.synced_folder"src/","/server/website",
+   owner:"root",group:"root"
+end
+
+Networking:
+-----------
+config.vm.network "private_network", type: "dhcp"
+config.vm.network "private_network", ip: XXX, 	
+  auto_config: false							-> disable the network configuration automatically
+config.vm.network "forwarded_port", guest:80, host:8080			-> foward port 80; then vagrant reload
+config.vm.network "public_network"					-> default
+config.vm.network "public_network", bridge:'en1: Wi-Fi (AirPort)'	-> using a network interface
+
+Virtual Box
+-----------
+Ubuntu / Fedora / Red-hat package: dkms
+
+Configuration Management:
+-------------------------
+Bash:
+provision.sh
+config.vm.provision "shell", path: "provision.sh"
+config.vm.provision "
+
+
+Vagrant.configure("2") do |config|
+  # Run Ansible from the Vagrant Host
+  config.vm.provision "ansible" do |ansible|
+    ansible.playbook = "playbook.yml"
+  end
+
+end
+
+
+provision.sh
+echo "install"
+apt update > /dev/null 2>&1		-> silent
+apt install -y apache2	
+rm -rf /var/www
+ln -fs	/vagrant /var/www		-> link for serving shared folder; localhost:8080
+
+apache2					-> servers files from /var/www
+
+
