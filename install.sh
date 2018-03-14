@@ -29,6 +29,7 @@ else
     echo "ERROR - Can not determine package management"
     echo "INFO - Exit instalation script"
     exit
+fi
 
 # Vim-plug
 curl -fLo ~/.vim/autoload/plug.vim --create-dirs \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
@@ -66,4 +67,4 @@ sudo pip install boto3
 sudo pip install docopt==0.6.2
 
 #  - Requests
-sudo pip install requests 
+sudo pip install requests
