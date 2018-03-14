@@ -54,3 +54,16 @@ sudo pip install awscli
 
 # Ansible
 sudo pip install ansible
+
+# Virtual Environments
+sudo pip install virtualenv
+
+# Python libraries:
+#  - Boto3
+sudo pip install boto3
+
+#  - Docopt
+sudo pip install docopt==0.6.2
+
+#  - Requests
+sudo pip install requests 
