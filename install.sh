@@ -23,7 +23,7 @@ PACKAGES='git zsh screen python-pip tree'
 if [ -f /etc/redhat-release ]; then 
     sudo yum update -y && sudo yum install -y $PACKAGES
     
-    if [! -f $(which vim) ]; then
+    if [ ! -f $(which vim) ]; then
         sudo yum install -y vim
     fi
 
@@ -31,7 +31,7 @@ if [ -f /etc/redhat-release ]; then
     sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
     sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
     yum check-update
-    sudo yum install code
+    sudo yum install -y code
 
 elif [ -f /etc/lsb-release ]; then 
     sudo apt-get update && sudo apt-get install -y $PACKAGES && sudo apt-get install -y vim-nox
