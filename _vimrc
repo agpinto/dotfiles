@@ -54,8 +54,8 @@ set history=10000
 
 "" User Interface
 set number " need those line numbers
-set mouse=a
-set ttymouse=xterm2
+"set mouse=a
+"set ttymouse=xterm2
 set ruler " show the line/column number of the cursor position
 set nowrap " don't wrap lines
 set linebreak " break line for wrapping at end of a word
