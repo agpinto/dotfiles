@@ -16,6 +16,7 @@ call plug#begin('~/.vim/plugged')
 
 " Any valid git URL is allowed
 "Plug 'https://github.com/junegunn/vim-github-dashboard.git'
+Plug 'https://github.com/vim-syntastic/syntastic.git'
 
 " Multiple Plug commands can be written in a single line using | separators
 " Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
@@ -78,12 +79,12 @@ set smartcase " ... unless they contain at least one capital letter
 "" Colors
 set term=xterm-256color
 syntax enable
-"if has('gui_running')
-"  set background=light
-"else
-"  set background=dark
-"endif
-"colorscheme solarized " can't work with anything else
+if has('gui_running')
+  set background=light
+else
+  set background=dark
+endif
+colorscheme solarized " can't work with anything else
 "highlight LineNr ctermfg=darkgrey
 set cursorline " highlight current line
 set list " turn on invisible characters

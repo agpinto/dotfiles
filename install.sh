@@ -60,7 +60,12 @@ else
 fi
 
 # Vim-plug
-curl -fLo ~/.vim/autoload/plug.vim --create-dirs \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+curl -fLo ~/.vim/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+
+# Vim-Colorscheme
+mkdir ~/.vim/colors
+curl -L https://raw.githubusercontent.com/vim-scripts/Solarized/master/colors/solarized.vim > ~/.vim/colors/solarized.vim
+
 
 # Clone repo
 git clone https://github.com/agpinto/dotfiles ~/.dotfiles
@@ -68,6 +73,9 @@ git clone https://github.com/agpinto/dotfiles ~/.dotfiles
 # Initialize submodules
 cd ~/.dotfiles
 git submodule update --init --recursive
+
+# Make ZSH the default shell
+sudo usermod -s $(which zsh) $USER
 
 # Link files
 for i in _*
@@ -94,5 +102,5 @@ sudo pip install docopt==0.6.2
 #  - Requests
 sudo pip install requests
 
-# Make ZSH the default shell
-sudo chsh -s $(which zsh)
+#  - Pedulum
+sudo pip install pendulum

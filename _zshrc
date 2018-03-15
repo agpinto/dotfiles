@@ -39,3 +39,4 @@ export TERM=xterm-256color
 
 # AWS Completion
 source /usr/local/bin/aws_zsh_completer.sh
+#source /usr/bin/aws_zsh_completer.sh
