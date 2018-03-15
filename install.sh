@@ -12,6 +12,11 @@ function link_file_to_home {
     ln -sf ${source} ${target}
 }
 
+# Directories
+mkdir ~/repos
+mkdir ~/python-virtual-environments
+
+
 
 # List of Applications to be installed
 PACKAGES='git zsh screen python-pip tree'
@@ -26,10 +31,10 @@ if [ -f /etc/redhat-release ]; then
     fi
 
     # Visual Studio Code
-    sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-    sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
-    yum check-update
-    sudo yum install -y code
+    #sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+    #sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
+    #yum check-update
+    #sudo yum install -y code
 
     # Virtual Box
     #sudo rpm --import oracle_vbox.asc
@@ -62,12 +67,12 @@ fi
 # Vim-plug
 curl -fLo ~/.vim/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 
-# Vim-Colorscheme
+# Vim colorscheme
 mkdir ~/.vim/colors
 curl -L https://raw.githubusercontent.com/vim-scripts/Solarized/master/colors/solarized.vim > ~/.vim/colors/solarized.vim
 
 
-# Clone repo
+# Personal repo
 git clone https://github.com/agpinto/dotfiles ~/.dotfiles
 
 # Initialize submodules
