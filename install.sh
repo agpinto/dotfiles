@@ -16,7 +16,9 @@ function link_file_to_home {
 mkdir ~/repos
 mkdir ~/python-virtual-environments
 
-
+# Hosts file
+curl -L http://someonewhocares.org/hosts/hosts > ~/hosts
+sudo cat ~/hosts >> /etc/hosts
 
 # List of Applications to be installed
 PACKAGES='git zsh screen python-pip tree'
