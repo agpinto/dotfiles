@@ -1,10 +1,7 @@
 #!/bin/bash
 
-#####################
-#
 # Installation script for dotfiles
-#
-#####################
+##################################
 
 
 # functions
@@ -21,7 +18,8 @@ PACKAGES='git zsh screen python-pip tree'
 
 # Install applications listed above
 if [ -f /etc/redhat-release ]; then 
-    sudo yum update -y && sudo yum install -y $PACKAGES
+    sudo yum update -y 
+    sudo yum install -y $PACKAGES
     
     if [ ! -f $(which vim) ]; then
         sudo yum install -y vim
@@ -33,8 +31,19 @@ if [ -f /etc/redhat-release ]; then
     yum check-update
     sudo yum install -y code
 
+    # Virtual Box
+    #sudo rpm --import oracle_vbox.asc
+    #wget -q https://www.virtualbox.org/download/oracle_vbox.asc -O- | rpm --import -
+    sudo yum install -y VirtualBox-5.2
+
+
 elif [ -f /etc/lsb-release ]; then 
-    sudo apt-get update && sudo apt-get install -y $PACKAGES && sudo apt-get install -y vim-nox
+    sudo add-apt-repository ppa:shutter/ppa
+    sudo apt-get update 
+    sudo apt-get install -y $PACKAGES
+    sudo apt-get install -y vim-nox
+    sudo apt-get install -y shutter
+    sudo apt-get install -y virtualbox-5.2
 
     # Visual Studio Code
     curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
@@ -66,9 +75,6 @@ for i in _*
     link_file_to_home $i
     done
 
-# Make ZSH the default shell
-chsh -s $(which zsh)
-
 # AWS
 sudo pip install awscli
 
@@ -87,3 +93,6 @@ sudo pip install docopt==0.6.2
 
 #  - Requests
 sudo pip install requests
+
+# Make ZSH the default shell
+sudo chsh -s $(which zsh)
