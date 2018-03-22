@@ -43,14 +43,24 @@ if [ -f /etc/redhat-release ]; then
     #wget -q https://www.virtualbox.org/download/oracle_vbox.asc -O- | rpm --import -
     sudo yum install -y VirtualBox-5.2
 
+    #Docker
+    DOCKER_REQUIRED_PACKAGES="yum-utils device-mapper-presistent-data lvm2"
+    sudo yum install -y $DOCKER_REQUIRED_PACKAGES
+
+    sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+    sudo yum-config-manager --enable docker-ce-test
+    sudo yum install docker-ce
+    sudo systemctl start docker
+    sudo docker run hello-world
+
 
 elif [ -f /etc/lsb-release ]; then 
     sudo add-apt-repository ppa:shutter/ppa
-    sudo apt-get update 
-    sudo apt-get install -y $PACKAGES
-    sudo apt-get install -y vim-nox
-    sudo apt-get install -y shutter
-    sudo apt-get install -y virtualbox-5.2
+    sudo apt update 
+    sudo apt install -y $PACKAGES
+    sudo apt install -y vim-nox
+    sudo apt install -y shutter
+    sudo apt install -y virtualbox-5.2
 
     # Visual Studio Code
     curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
@@ -58,6 +68,16 @@ elif [ -f /etc/lsb-release ]; then
     sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list'
     sudo apt-get update
     sudo apt-get install code # or code-insiders
+
+    # Docker
+    DOCKER_REQUIRED_PACKAGES="apt-transport-https ca-certificates  curl software-properties-common"
+    sudo apt install -y
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+    sudo apt update
+    sudo apt install docker-ce
+
 
 else
     echo "ERROR - Release file not found"
@@ -111,3 +131,6 @@ sudo pip install requests
 
 #  - Pedulum
 sudo pip install pendulum
+
+# Docker verifier
+sudo docker run hello-world
